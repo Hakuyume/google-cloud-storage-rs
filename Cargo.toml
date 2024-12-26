@@ -1,0 +1,12 @@
+[package]
+name = "google-cloud-storage"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+base64 = "0.22.1"
+headers = "0.4.0"
+http = "1.2.0"
+
+[dev-dependencies]
+hex-literal = "0.4.1"
