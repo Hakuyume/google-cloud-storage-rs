@@ -75,6 +75,7 @@ where
     Collect::S0(f)
 }
 #[pin_project::pin_project(project = CollectProj)]
+#[allow(clippy::large_enum_variant)]
 pub(super) enum Collect<F, U>
 where
     U: http_body::Body,

@@ -19,6 +19,9 @@ hyper-util = { version = "0.1.10", features = ["client-legacy", "tokio"], option
 mime = "0.3.17"
 percent-encoding = "2.3.1"
 pin-project = "1.1.7"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.134"
+serde_with = { version = "3.12.0", features = ["base64"] }
 thiserror = "2.0.9"
 tower = { version = "0.5.2", features = ["util"] }
 yup-oauth2 = { version = "11.0.0", default-features = false, features = ["ring", "service-account", "__rustls"], optional = true }

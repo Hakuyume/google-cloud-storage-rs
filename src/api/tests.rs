@@ -8,7 +8,7 @@ use md5::{Digest, Md5};
 use std::convert::Infallible;
 use std::env;
 use std::sync::Arc;
-use tower::Layer;
+use tower::{Layer, ServiceExt};
 
 type Connector = hyper_rustls::HttpsConnector<hyper_util::client::legacy::connect::HttpConnector>;
 type Client = hyper_util::client::legacy::Client<Connector, UnsyncBoxBody<Bytes, Infallible>>;
@@ -170,16 +170,6 @@ async fn test_xml_put_object_content_type() {
             mime::TEXT_PLAIN_UTF_8,
         );
     }
-    {
-        let response = super::xml::get_object::builder(&bucket_name, &object_name)
-            .send(service.clone())
-            .await
-            .unwrap();
-        assert_eq!(
-            mime::Mime::from(response.headers().typed_get::<ContentType>().unwrap()),
-            mime::TEXT_PLAIN_UTF_8,
-        );
-    }
 }
 
 #[tokio::test]
@@ -210,6 +200,12 @@ async fn test_xml_delete_object() {
             .unwrap();
     }
     {
+        super::xml::head_object::builder(&bucket_name, &object_name)
+            .send(service.clone())
+            .await
+            .unwrap();
+    }
+    {
         super::xml::delete_object::builder(&bucket_name, &object_name)
             .send(service.clone())
             .await
@@ -221,5 +217,53 @@ async fn test_xml_delete_object() {
             .await
             .unwrap_err();
         assert_status(e, StatusCode::NOT_FOUND);
+    }
+}
+
+#[tokio::test]
+async fn test_json_patch_object_content_type() {
+    let service = service().await;
+    let bucket_name = bucket_name();
+    let object_name = object_name();
+    let data = b"hello world";
+
+    {
+        super::xml::put_object::builder(&bucket_name, &object_name, body(data))
+            .send(service.clone())
+            .await
+            .unwrap();
+    }
+    {
+        let response = super::xml::head_object::builder(&bucket_name, &object_name)
+            .send(service.clone())
+            .await
+            .unwrap();
+        assert_eq!(
+            mime::Mime::from(response.headers().typed_get::<ContentType>().unwrap()),
+            mime::APPLICATION_OCTET_STREAM,
+        );
+    }
+    {
+        super::json::patch_object::builder(&bucket_name, &object_name)
+            .content_type(mime::TEXT_PLAIN_UTF_8)
+            .send(
+                service
+                    .clone()
+                    .map_request(|request: http::Request<String>| {
+                        request.map(BodyExt::boxed_unsync)
+                    }),
+            )
+            .await
+            .unwrap();
+    }
+    {
+        let response = super::xml::head_object::builder(&bucket_name, &object_name)
+            .send(service.clone())
+            .await
+            .unwrap();
+        assert_eq!(
+            mime::Mime::from(response.headers().typed_get::<ContentType>().unwrap()),
+            mime::TEXT_PLAIN_UTF_8,
+        );
     }
 }
