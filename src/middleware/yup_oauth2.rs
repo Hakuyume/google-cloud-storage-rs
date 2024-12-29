@@ -53,6 +53,7 @@ where
     Ok(Layer { authenticator })
 }
 
+#[derive(Clone)]
 pub struct Layer<C> {
     authenticator: Authenticator<C>,
 }
@@ -71,6 +72,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct Service<S, C> {
     inner: S,
     authenticator: Authenticator<C>,

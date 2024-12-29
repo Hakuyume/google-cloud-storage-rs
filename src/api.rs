@@ -1,3 +1,4 @@
+mod future;
 pub mod json;
 pub mod xml;
 
@@ -14,3 +15,6 @@ pub enum Error<S, B> {
 
     Api(http::Response<Bytes>),
 }
+
+#[cfg(test)]
+mod tests;

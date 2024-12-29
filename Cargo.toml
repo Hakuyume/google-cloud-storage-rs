@@ -15,7 +15,8 @@ headers = "0.4.0"
 http = "1.2.0"
 http-body = "1.0.1"
 http-body-util = "0.1.2"
-hyper-util = { version = "0.1.10", features = ["client-legacy"], optional = true }
+hyper-util = { version = "0.1.10", features = ["client-legacy", "tokio"], optional = true }
+mime = "0.3.17"
 percent-encoding = "2.3.1"
 pin-project = "1.1.7"
 thiserror = "2.0.9"
@@ -24,3 +25,9 @@ yup-oauth2 = { version = "11.0.0", default-features = false, features = ["ring",
 
 [dev-dependencies]
 hex-literal = "0.4.1"
+hyper-rustls = "0.27.5"
+hyper-util = { version = "0.1.10", features = ["client-legacy", "http1"] }
+md-5 = "0.10.6"
+rustls = "0.23.20"
+tokio = { version = "1.42.0", features = ["macros", "rt-multi-thread"] }
+uuid = { version = "1.11.0", features = ["v4"] }

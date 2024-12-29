@@ -1,7 +1,8 @@
-// https://cloud.google.com/storage/docs/xml-api/get-object-download
+// https://cloud.google.com/storage/docs/xml-api/head-object
 
 use super::super::future::{oneshot, Oneshot};
 use super::super::Error;
+use bytes::Bytes;
 use std::future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -33,7 +34,7 @@ impl Builder {
             bucket_name,
             object_name,
         } = self;
-        let request = http::Request::get(super::uri(bucket_name, object_name))
+        let request = http::Request::head(super::uri(bucket_name, object_name))
             .body(T::default())
             .map_err(Error::Http);
         Future(oneshot(service, request))
@@ -50,8 +51,11 @@ where
     S: tower::Service<http::Request<T>, Response = http::Response<U>>,
     U: http_body::Body,
 {
-    type Output = Result<http::Response<U>, Error<S::Error, U::Error>>;
+    type Output = Result<http::Response<()>, Error<S::Error, U::Error>>;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        self.project().0.poll(cx)
+        self.project()
+            .0
+            .poll(cx)
+            .map_ok(|response| response.map(|_| ()))
     }
 }
