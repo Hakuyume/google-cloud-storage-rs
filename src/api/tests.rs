@@ -80,6 +80,18 @@ async fn test_xml_get_object_no_such_key() {
 }
 
 #[tokio::test]
+async fn test_xml_delete_object_no_such_key() {
+    let service = service().await;
+    let bucket_name = bucket_name();
+    let object_name = object_name();
+    let e = super::xml::delete_object::builder(&bucket_name, &object_name)
+        .send(service)
+        .await
+        .unwrap_err();
+    assert_status(e, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
 async fn test_xml_put_object() {
     let service = service().await;
     let bucket_name = bucket_name();
@@ -182,4 +194,32 @@ async fn test_xml_put_object_bad_digest() {
         .await
         .unwrap_err();
     assert_status(e, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_xml_delete_object() {
+    let service = service().await;
+    let bucket_name = bucket_name();
+    let object_name = object_name();
+    let data = b"hello world";
+
+    {
+        super::xml::put_object::builder(&bucket_name, &object_name, body(data))
+            .send(service.clone())
+            .await
+            .unwrap();
+    }
+    {
+        super::xml::delete_object::builder(&bucket_name, &object_name)
+            .send(service.clone())
+            .await
+            .unwrap();
+    }
+    {
+        let e = super::xml::head_object::builder(&bucket_name, &object_name)
+            .send(service)
+            .await
+            .unwrap_err();
+        assert_status(e, StatusCode::NOT_FOUND);
+    }
 }

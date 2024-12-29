@@ -1,4 +1,4 @@
-// https://cloud.google.com/storage/docs/xml-api/head-object
+// https://cloud.google.com/storage/docs/xml-api/delete-object
 
 use super::super::future::{oneshot, Oneshot};
 use super::super::Error;
@@ -33,7 +33,7 @@ impl Builder {
             bucket_name,
             object_name,
         } = self;
-        let request = http::Request::head(super::uri(bucket_name, object_name))
+        let request = http::Request::delete(super::uri(bucket_name, object_name))
             .body(T::default())
             .map_err(Error::Http);
         Future(oneshot(service, request))
