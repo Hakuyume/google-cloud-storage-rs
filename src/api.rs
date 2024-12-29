@@ -15,6 +15,7 @@ pub enum Error<S, B> {
     #[error(transparent)]
     Service(S),
 
+    #[error("Api({0:?})")]
     Api(http::Response<Bytes>),
 }
 
