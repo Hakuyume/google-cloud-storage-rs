@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::api::Error;
 use http_body_util::BodyExt;
 use std::future::{self, IntoFuture};
 use std::marker::PhantomData;
@@ -89,7 +89,7 @@ where
                 }
                 StateProj::S2(parts, f) => {
                     let body = ready!(f.poll(cx)).map_err(Error::Body)?;
-                    break Poll::Ready(Err(Error::Status(http::Response::from_parts(
+                    break Poll::Ready(Err(Error::Api(http::Response::from_parts(
                         parts.take().unwrap(),
                         body.to_bytes(),
                     ))));
