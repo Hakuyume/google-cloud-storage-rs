@@ -3,6 +3,7 @@ use http::{HeaderName, HeaderValue};
 
 // https://cloud.google.com/storage/docs/xml-api/reference-headers#xgooghash
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub struct XGoogHash {
     pub crc32c: Option<[u8; 4]>,
     pub md5: Option<[u8; 16]>,
@@ -80,7 +81,7 @@ mod tests {
                 headers.typed_get::<super::XGoogHash>(),
                 Some(super::XGoogHash {
                     crc32c: Some(hex_literal::hex!("9f4df1e8")),
-                    md5: None
+                    ..super::XGoogHash::default()
                 }),
             );
         }
@@ -93,8 +94,8 @@ mod tests {
             assert_eq!(
                 headers.typed_get(),
                 Some(super::XGoogHash {
-                    crc32c: None,
                     md5: Some(hex_literal::hex!("3a393d7377617f182829554763015b1d")),
+                    ..super::XGoogHash::default()
                 }),
             );
         }

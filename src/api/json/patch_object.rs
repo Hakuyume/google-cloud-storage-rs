@@ -7,7 +7,7 @@ use std::future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-pub fn builder<B, O>(bucket_name: B, object_name: O) -> Builder
+pub fn builder<B, O>(bucket_name: B, object_name: O, request: Request) -> Builder
 where
     B: Into<String>,
     O: Into<String>,
@@ -15,7 +15,7 @@ where
     Builder {
         bucket_name: bucket_name.into(),
         object_name: object_name.into(),
-        request: Request::default(),
+        request,
     }
 }
 
@@ -45,11 +45,6 @@ impl Builder {
         let request = body.and_then(|body| builder.body(body.into()).map_err(Error::Http));
         Future(collect(oneshot(service, request)))
     }
-
-    pub fn content_type(mut self, value: mime::Mime) -> Self {
-        self.request.content_type = Some(value);
-        self
-    }
 }
 
 #[pin_project::pin_project]
@@ -75,15 +70,17 @@ where
 #[serde_with::serde_as]
 #[derive(Default, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-struct Request {
+#[non_exhaustive]
+pub struct Request {
     #[serde_as(as = "Option<serde_with::DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    content_type: Option<mime::Mime>,
+    pub content_type: Option<mime::Mime>,
 }
 
 #[serde_with::serde_as]
 #[derive(Clone, Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct Response {
     pub bucket: String,
     #[serde_as(as = "serde_with::DisplayFromStr")]

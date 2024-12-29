@@ -2,7 +2,8 @@
 
 use super::super::future::{oneshot, Oneshot};
 use super::super::Error;
-use headers::{ContentLength, ContentType, HeaderMapExt};
+use headers::{Header, HeaderMapExt};
+use http::HeaderMap;
 use std::future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -16,9 +17,7 @@ where
         bucket_name: bucket_name.into(),
         object_name: object_name.into(),
         body,
-        content_length: None,
-        content_type: None,
-        content_md5: None,
+        headers: HeaderMap::new(),
     }
 }
 
@@ -26,9 +25,7 @@ pub struct Builder<T> {
     bucket_name: String,
     object_name: String,
     body: T,
-    content_length: Option<u64>,
-    content_type: Option<mime::Mime>,
-    content_md5: Option<[u8; 16]>,
+    headers: HeaderMap,
 }
 
 impl<T> Builder<T> {
@@ -41,39 +38,21 @@ impl<T> Builder<T> {
             bucket_name,
             object_name,
             body,
-            content_length,
-            content_type,
-            content_md5,
+            headers,
         } = self;
         let mut builder = http::Request::put(super::uri(bucket_name, object_name));
-        if let Some(headers) = builder.headers_mut() {
-            if let Some(content_length) = content_length {
-                headers.typed_insert(ContentLength(content_length));
-            }
-            if let Some(content_type) = content_type {
-                headers.typed_insert(ContentType::from(content_type));
-            }
-            headers.typed_insert(crate::header::XGoogHash {
-                crc32c: None,
-                md5: content_md5,
-            });
+        if let Some(h) = builder.headers_mut() {
+            *h = headers;
         }
         let request = builder.body(body).map_err(Error::Http);
         Future(oneshot(service, request))
     }
 
-    pub fn content_length(mut self, value: u64) -> Self {
-        self.content_length = Some(value);
-        self
-    }
-
-    pub fn content_type(mut self, value: mime::Mime) -> Self {
-        self.content_type = Some(value);
-        self
-    }
-
-    pub fn content_md5(mut self, value: [u8; 16]) -> Self {
-        self.content_md5 = Some(value);
+    pub fn header<H>(mut self, header: H) -> Self
+    where
+        H: Header,
+    {
+        self.headers.typed_insert(header);
         self
     }
 }

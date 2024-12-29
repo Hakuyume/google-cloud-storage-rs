@@ -103,46 +103,30 @@ async fn test_xml_put_object() {
             .send(service.clone())
             .await
             .unwrap();
-        assert_eq!(
-            response
-                .headers()
-                .typed_get::<crate::header::XGoogHash>()
-                .unwrap()
-                .md5,
-            Some(Md5::digest(data).into()),
-        );
+        let crate::header::XGoogHash { md5, .. } = response.headers().typed_get().unwrap();
+        assert_eq!(md5, Some(Md5::digest(data).into()));
     }
     {
         let response = super::xml::head_object::builder(&bucket_name, &object_name)
             .send(service.clone())
             .await
             .unwrap();
-        assert_eq!(
-            response.headers().typed_get::<ContentLength>().unwrap().0,
-            data.len() as u64,
-        );
-        assert_eq!(
-            response
-                .headers()
-                .typed_get::<crate::header::XGoogHash>()
-                .unwrap()
-                .md5,
-            Some(Md5::digest(data).into()),
-        );
+        let ContentLength(content_length) = response.headers().typed_get().unwrap();
+        assert_eq!(content_length, data.len() as u64);
+        let crate::header::XGoogHash { md5, .. } = response.headers().typed_get().unwrap();
+        assert_eq!(md5, Some(Md5::digest(data).into()));
     }
     {
         let response = super::xml::get_object::builder(&bucket_name, &object_name)
             .send(service.clone())
             .await
             .unwrap();
-        assert_eq!(
-            response.headers().typed_get::<ContentLength>().unwrap().0,
-            data.len() as u64,
-        );
-        assert_eq!(
-            response.into_body().collect().await.unwrap().to_bytes(),
-            data.as_slice(),
-        );
+        let ContentLength(content_length) = response.headers().typed_get().unwrap();
+        assert_eq!(content_length, data.len() as u64);
+        let crate::header::XGoogHash { md5, .. } = response.headers().typed_get().unwrap();
+        assert_eq!(md5, Some(Md5::digest(data).into()));
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(body, data.as_slice());
     }
 }
 
@@ -155,7 +139,7 @@ async fn test_xml_put_object_content_type() {
 
     {
         super::xml::put_object::builder(&bucket_name, &object_name, body(data))
-            .content_type(mime::TEXT_PLAIN_UTF_8)
+            .header(ContentType::text_utf8())
             .send(service.clone())
             .await
             .unwrap();
@@ -165,10 +149,8 @@ async fn test_xml_put_object_content_type() {
             .send(service.clone())
             .await
             .unwrap();
-        assert_eq!(
-            mime::Mime::from(response.headers().typed_get::<ContentType>().unwrap()),
-            mime::TEXT_PLAIN_UTF_8,
-        );
+        let content_type = response.headers().typed_get::<ContentType>().unwrap();
+        assert_eq!(content_type, ContentType::text_utf8());
     }
 }
 
@@ -179,7 +161,10 @@ async fn test_xml_put_object_bad_digest() {
     let object_name = object_name();
     let data = b"hello";
     let e = super::xml::put_object::builder(&bucket_name, &object_name, body(data))
-        .content_md5(Md5::digest("world").into())
+        .header(crate::header::XGoogHash {
+            md5: Some(Md5::digest("world").into()),
+            ..crate::header::XGoogHash::default()
+        })
         .send(service)
         .await
         .unwrap_err();
@@ -238,14 +223,15 @@ async fn test_json_patch_object_content_type() {
             .send(service.clone())
             .await
             .unwrap();
-        assert_eq!(
-            mime::Mime::from(response.headers().typed_get::<ContentType>().unwrap()),
-            mime::APPLICATION_OCTET_STREAM,
-        );
+        let content_type = response.headers().typed_get::<ContentType>().unwrap();
+        assert_eq!(content_type, ContentType::octet_stream());
     }
     {
-        super::json::patch_object::builder(&bucket_name, &object_name)
-            .content_type(mime::TEXT_PLAIN_UTF_8)
+        let request = super::json::patch_object::Request {
+            content_type: Some(mime::TEXT_PLAIN_UTF_8),
+            ..super::json::patch_object::Request::default()
+        };
+        super::json::patch_object::builder(&bucket_name, &object_name, request)
             .send(
                 service
                     .clone()
@@ -261,9 +247,7 @@ async fn test_json_patch_object_content_type() {
             .send(service.clone())
             .await
             .unwrap();
-        assert_eq!(
-            mime::Mime::from(response.headers().typed_get::<ContentType>().unwrap()),
-            mime::TEXT_PLAIN_UTF_8,
-        );
+        let content_type = response.headers().typed_get::<ContentType>().unwrap();
+        assert_eq!(content_type, ContentType::text_utf8());
     }
 }
