@@ -3,6 +3,10 @@ name = "google-cloud-storage"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["yup-oauth2"]
+yup-oauth2 = ["dep:hyper-util", "dep:yup-oauth2"]
+
 [dependencies]
 base64 = "0.22.1"
 bytes = "1.9.0"
@@ -11,10 +15,12 @@ headers = "0.4.0"
 http = "1.2.0"
 http-body = "1.0.1"
 http-body-util = "0.1.2"
+hyper-util = { version = "0.1.10", features = ["client-legacy"], optional = true }
 percent-encoding = "2.3.1"
 pin-project = "1.1.7"
 thiserror = "2.0.9"
 tower = { version = "0.5.2", features = ["util"] }
+yup-oauth2 = { version = "11.0.0", default-features = false, features = ["ring", "service-account", "__rustls"], optional = true }
 
 [dev-dependencies]
 hex-literal = "0.4.1"

@@ -6,12 +6,7 @@ use std::pin::Pin;
 use std::task::{ready, Context, Poll};
 use tower::ServiceExt;
 
-pub fn builder<S, T, U>(service: S, bucket_name: &str, object_name: &str) -> Builder<S, T, U>
-where
-    S: tower::Service<http::Request<T>, Response = http::Response<U>>,
-    T: Default,
-    U: http_body::Body,
-{
+pub fn builder<S, T>(service: S, bucket_name: &str, object_name: &str) -> Builder<S, T> {
     Builder {
         service,
         uri: super::uri(bucket_name, object_name),
@@ -19,13 +14,13 @@ where
     }
 }
 
-pub struct Builder<S, T, U> {
+pub struct Builder<S, T> {
     service: S,
     uri: String,
-    _phantom: PhantomData<fn() -> (T, U)>,
+    _phantom: PhantomData<fn() -> T>,
 }
 
-impl<S, T, U> IntoFuture for Builder<S, T, U>
+impl<S, T, U> IntoFuture for Builder<S, T>
 where
     S: tower::Service<http::Request<T>, Response = http::Response<U>>,
     T: Default,
@@ -33,6 +28,7 @@ where
 {
     type Output = Result<http::Response<U>, Error<S::Error, U::Error>>;
     type IntoFuture = Future<S, T, U>;
+
     fn into_future(self) -> Self::IntoFuture {
         Future(State::S0(Some(self)))
     }
@@ -52,11 +48,11 @@ where
     S: tower::Service<http::Request<T>>,
     U: http_body::Body,
 {
-    S0(Option<Builder<S, T, U>>),
+    S0(Option<Builder<S, T>>),
     S1(#[pin] tower::util::Oneshot<S, http::Request<T>>),
     S2(
-        Option<http::response::Parts>,
         #[pin] http_body_util::combinators::Collect<U>,
+        Option<http::response::Parts>,
     ),
 }
 
@@ -67,12 +63,13 @@ where
     U: http_body::Body,
 {
     type Output = Result<http::Response<U>, Error<S::Error, U::Error>>;
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut this = self.project();
         loop {
             match this.0.as_mut().project() {
-                StateProj::S0(builder) => {
-                    let Builder { service, uri, .. } = builder.take().unwrap();
+                StateProj::S0(state) => {
+                    let Builder { service, uri, .. } = state.take().unwrap();
                     let request = http::Request::get(uri)
                         .body(T::default())
                         .map_err(Error::Http)?;
@@ -84,13 +81,14 @@ where
                         break Poll::Ready(Ok(response));
                     } else {
                         let (parts, body) = response.into_parts();
-                        this.0.set(State::S2(Some(parts), body.collect()));
+                        this.0.set(State::S2(body.collect(), Some(parts)));
                     }
                 }
-                StateProj::S2(parts, f) => {
+                StateProj::S2(f, state) => {
                     let body = ready!(f.poll(cx)).map_err(Error::Body)?;
+                    let parts = state.take().unwrap();
                     break Poll::Ready(Err(Error::Api(http::Response::from_parts(
-                        parts.take().unwrap(),
+                        parts,
                         body.to_bytes(),
                     ))));
                 }

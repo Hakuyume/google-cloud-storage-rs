@@ -1,6 +1,5 @@
 pub mod get_object;
 
-pub use get_object::builder as get_object;
 use std::fmt;
 
 fn uri<B, O>(bucket_name: B, object_name: O) -> String
