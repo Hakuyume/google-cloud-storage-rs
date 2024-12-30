@@ -118,6 +118,7 @@ where
     ),
     S2(#[pin] S::Future),
 }
+
 impl<S, T, C> future::Future for Future<S, T, C>
 where
     S: tower::Service<http::Request<T>>,
