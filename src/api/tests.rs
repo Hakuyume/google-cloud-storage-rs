@@ -29,10 +29,13 @@ async fn service() -> Service {
         .build();
     let client = hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
         .build(connector.clone());
-    crate::middleware::yup_oauth2::with_connector(connector.clone())
-        .await
-        .unwrap()
-        .layer(client)
+    crate::middleware::yup_oauth2::with_client(
+        hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
+            .build(connector),
+    )
+    .await
+    .unwrap()
+    .layer(client)
 }
 
 fn bucket_name() -> String {

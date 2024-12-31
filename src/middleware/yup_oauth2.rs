@@ -7,7 +7,9 @@ use std::future;
 use std::mem;
 use std::pin::Pin;
 use std::task::{ready, Context, Poll};
-use yup_oauth2::authenticator::{ApplicationDefaultCredentialsTypes, Authenticator};
+use yup_oauth2::authenticator::{
+    ApplicationDefaultCredentialsTypes, Authenticator, HyperClientBuilder,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error<S> {
@@ -19,13 +21,10 @@ pub enum Error<S> {
     Service(S),
 }
 
-pub async fn with_connector<C>(connector: C) -> Result<Layer<C>, yup_oauth2::Error>
+pub async fn with_client<C>(client: C) -> Result<Layer<C::Connector>, yup_oauth2::Error>
 where
-    C: Clone + Connect + Send + Sync + 'static,
+    C: HyperClientBuilder,
 {
-    let client = hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
-        .build(connector);
-
     let authenticator = async {
         if let Ok(path) = env::var("GOOGLE_APPLICATION_CREDENTIALS") {
             if let Ok(secret) = yup_oauth2::read_authorized_user_secret(&path).await {
