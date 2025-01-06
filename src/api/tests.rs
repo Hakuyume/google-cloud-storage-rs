@@ -142,7 +142,7 @@ async fn test_xml_put_object_content_type() {
 
     {
         super::xml::put_object::builder(&bucket_name, &object_name, body(data))
-            .header(ContentType::text_utf8())
+            .typed_header(ContentType::text_utf8())
             .send(service.clone())
             .await
             .unwrap();
@@ -164,7 +164,7 @@ async fn test_xml_put_object_bad_digest() {
     let object_name = object_name();
     let data = b"hello";
     let e = super::xml::put_object::builder(&bucket_name, &object_name, body(data))
-        .header(crate::header::XGoogHash {
+        .typed_header(crate::header::XGoogHash {
             md5: Some(Md5::digest("world").into()),
             ..crate::header::XGoogHash::default()
         })

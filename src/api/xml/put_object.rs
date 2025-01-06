@@ -48,7 +48,7 @@ impl<T> Builder<T> {
         Future(oneshot(service, request))
     }
 
-    pub fn header<H>(mut self, header: H) -> Self
+    pub fn typed_header<H>(mut self, header: H) -> Self
     where
         H: Header,
     {
