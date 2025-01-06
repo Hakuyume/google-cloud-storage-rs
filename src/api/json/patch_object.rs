@@ -70,7 +70,6 @@ where
 #[serde_with::serde_as]
 #[derive(Default, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct Request {
     #[serde_as(as = "Option<serde_with::DisplayFromStr>")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -80,7 +79,6 @@ pub struct Request {
 #[serde_with::serde_as]
 #[derive(Clone, Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct Response {
     pub bucket: String,
     #[serde_as(as = "serde_with::DisplayFromStr")]

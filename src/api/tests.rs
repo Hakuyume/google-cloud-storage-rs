@@ -232,7 +232,6 @@ async fn test_json_patch_object_content_type() {
     {
         let request = super::json::patch_object::Request {
             content_type: Some(mime::TEXT_PLAIN_UTF_8),
-            ..super::json::patch_object::Request::default()
         };
         super::json::patch_object::builder(&bucket_name, &object_name, request)
             .send(

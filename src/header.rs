@@ -3,7 +3,6 @@ use http::{HeaderName, HeaderValue};
 
 // https://cloud.google.com/storage/docs/xml-api/reference-headers#xgooghash
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-#[non_exhaustive]
 pub struct XGoogHash {
     pub crc32c: Option<[u8; 4]>,
     pub md5: Option<[u8; 16]>,
