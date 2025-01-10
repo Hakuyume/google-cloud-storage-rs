@@ -1,8 +1,7 @@
-mod future;
 pub mod json;
 pub mod xml;
 
-use bytes::Bytes;
+pub use http_extra::check_status::StatusError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error<S, B> {
@@ -14,9 +13,8 @@ pub enum Error<S, B> {
     Json(serde_json::Error),
     #[error(transparent)]
     Service(S),
-
-    #[error("Api({0:?})")]
-    Api(http::Response<Bytes>),
+    #[error(transparent)]
+    Status(StatusError),
 }
 
 #[cfg(test)]

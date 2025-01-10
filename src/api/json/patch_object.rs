@@ -1,12 +1,5 @@
 // https://cloud.google.com/storage/docs/json_api/v1/objects/patch
 
-use super::super::future::{collect, oneshot, Collect, Oneshot};
-use super::super::Error;
-use headers::{ContentType, HeaderMapExt};
-use std::future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
-
 pub fn builder<B, O>(bucket_name: B, object_name: O, request: Request) -> Builder
 where
     B: Into<String>,
@@ -37,35 +30,11 @@ impl Builder {
             object_name,
             request,
         } = self;
-        let mut builder = http::Request::patch(super::uri(bucket_name, object_name));
-        if let Some(headers) = builder.headers_mut() {
-            headers.typed_insert(ContentType::json());
-        }
-        let body = serde_json::to_string(&request).map_err(Error::Json);
-        let request = body.and_then(|body| builder.body(body.into()).map_err(Error::Http));
-        Future(collect(oneshot(service, request)))
+        let builder = http::Request::patch(super::uri(bucket_name, object_name));
+        super::send(service, builder, request)
     }
 }
-
-#[pin_project::pin_project]
-pub struct Future<S, T, U>(#[pin] Collect<Oneshot<S, T, U>, U>)
-where
-    S: tower::Service<http::Request<T>>,
-    U: http_body::Body;
-impl<S, T, U> future::Future for Future<S, T, U>
-where
-    S: tower::Service<http::Request<T>, Response = http::Response<U>>,
-    U: http_body::Body,
-{
-    type Output = Result<http::Response<Response>, Error<S::Error, U::Error>>;
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        self.project().0.poll(cx).map(|response| {
-            let (parts, body) = response?.into_parts();
-            let body = serde_json::from_slice(&body).map_err(Error::Json)?;
-            Ok(http::Response::from_parts(parts, body))
-        })
-    }
-}
+pub type Future<S, T, U> = super::Send<S, T, U, Response>;
 
 #[serde_with::serde_as]
 #[derive(Default, serde::Serialize)]

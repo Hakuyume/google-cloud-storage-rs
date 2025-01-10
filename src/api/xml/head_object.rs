@@ -1,10 +1,8 @@
 // https://cloud.google.com/storage/docs/xml-api/head-object
 
-use super::super::future::{oneshot, Oneshot};
-use super::super::Error;
-use std::future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use http::{Request, Response};
+use http_body::Body;
+use tower::Service;
 
 pub fn builder<B, O>(bucket_name: B, object_name: O) -> Builder
 where
@@ -25,36 +23,19 @@ pub struct Builder {
 impl Builder {
     pub fn send<S, T, U>(self, service: S) -> Future<S, T, U>
     where
-        S: tower::Service<http::Request<T>, Response = http::Response<U>>,
+        S: Service<Request<T>, Response = Response<U>>,
         T: Default,
-        U: http_body::Body,
+        U: Body,
     {
         let Self {
             bucket_name,
             object_name,
         } = self;
-        let request = http::Request::head(super::uri(bucket_name, object_name))
-            .body(T::default())
-            .map_err(Error::Http);
-        Future(oneshot(service, request))
+        super::empty(super::send(
+            service,
+            Request::head(super::uri(bucket_name, object_name)),
+            T::default(),
+        ))
     }
 }
-
-#[pin_project::pin_project]
-pub struct Future<S, T, U>(#[pin] Oneshot<S, T, U>)
-where
-    S: tower::Service<http::Request<T>>,
-    U: http_body::Body;
-impl<S, T, U> future::Future for Future<S, T, U>
-where
-    S: tower::Service<http::Request<T>, Response = http::Response<U>>,
-    U: http_body::Body,
-{
-    type Output = Result<http::Response<()>, Error<S::Error, U::Error>>;
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        self.project()
-            .0
-            .poll(cx)
-            .map_ok(|response| response.map(|_| ()))
-    }
-}
+pub type Future<S, T, U> = super::Empty<super::Send<S, T, U>, U>;

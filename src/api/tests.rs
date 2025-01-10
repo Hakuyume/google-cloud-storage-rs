@@ -12,7 +12,7 @@ use tower::{Layer, ServiceExt};
 
 type Connector = hyper_rustls::HttpsConnector<hyper_util::client::legacy::connect::HttpConnector>;
 type Client = hyper_util::client::legacy::Client<Connector, UnsyncBoxBody<Bytes, Infallible>>;
-type Service = crate::middleware::yup_oauth2::Service<Client, Connector>;
+type Service = crate::yup_oauth2::Service<Client, Connector>;
 async fn service() -> Service {
     let tls_config = rustls::ClientConfig::builder_with_provider(Arc::new(
         rustls::crypto::aws_lc_rs::default_provider(),
@@ -29,7 +29,7 @@ async fn service() -> Service {
         .build();
     let client = hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
         .build(connector.clone());
-    crate::middleware::yup_oauth2::with_client(
+    crate::yup_oauth2::Layer::with_client(
         hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
             .build(connector),
     )
@@ -51,7 +51,7 @@ fn body(data: &'static [u8]) -> UnsyncBoxBody<Bytes, Infallible> {
 }
 
 fn assert_status<S, B>(e: super::Error<S, B>, status: StatusCode) {
-    if let super::Error::Api(e) = e {
+    if let super::Error::Status(super::StatusError(e)) = e {
         assert_eq!(e.status(), status);
     } else {
         panic!();

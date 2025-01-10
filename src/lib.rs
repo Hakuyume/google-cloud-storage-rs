@@ -1,3 +1,3 @@
 pub mod api;
 pub mod header;
-pub mod middleware;
+pub mod yup_oauth2;
