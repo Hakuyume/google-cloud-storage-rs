@@ -646,7 +646,7 @@ dependencies = [
 [[package]]
 name = "http-extra"
 version = "0.1.0"
-source = "git+https://github.com/Hakuyume/http-extra-rs.git#93152bd6459c9abe0364ead74720dafea30ff52b"
+source = "git+https://github.com/Hakuyume/http-extra-rs.git?rev=0e487d4#0e487d414cd04c025265b03c522b8e439558d9c1"
 dependencies = [
  "bytes",
  "futures",

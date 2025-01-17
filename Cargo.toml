@@ -17,7 +17,7 @@ headers = "0.4.0"
 http = "1.2.0"
 http-body = "1.0.1"
 http-body-util = "0.1.2"
-http-extra = { git = "https://github.com/Hakuyume/http-extra-rs.git", default-features = false }
+http-extra = { git = "https://github.com/Hakuyume/http-extra-rs.git", rev = "0e487d4", default-features = false }
 hyper-util = { version = "0.1.10", features = ["client-legacy"], optional = true }
 mime = "0.3.17"
 percent-encoding = "2.3.1"
