@@ -38,5 +38,4 @@ impl Builder {
         )
     }
 }
-
 pub type Future<S, T, U> = super::Send<S, T, U>;
