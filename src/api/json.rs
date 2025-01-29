@@ -4,7 +4,7 @@ use futures::future::{Either, MapErr};
 use futures::{FutureExt, TryFutureExt};
 use http::{Request, Response};
 use http_body::Body;
-use http_extra::{check_status, from_json_response, to_json_request};
+use http_extra::{check_status, from_json, to_json};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::future::{self, Ready};
@@ -31,20 +31,20 @@ where
     W: for<'de> Deserialize<'de>,
 {
     let map_err: MapErrFn<S, T, U> = |value| match value {
-        from_json_response::Error::Service(check_status::Error::Service(e)) => {
+        from_json::response::Error::Service(check_status::Error::Service(e)) => {
             Error::<S, T, U>::Service(e)
         }
-        from_json_response::Error::Service(check_status::Error::Body(e))
-        | from_json_response::Error::Body(e) => Error::<S, T, U>::Body(e),
-        from_json_response::Error::Service(check_status::Error::Status(e)) => {
+        from_json::response::Error::Service(check_status::Error::Body(e))
+        | from_json::response::Error::Body(e) => Error::<S, T, U>::Body(e),
+        from_json::response::Error::Service(check_status::Error::Status(e)) => {
             Error::<S, T, U>::Status(e)
         }
-        from_json_response::Error::Json(e) => Error::<S, T, U>::Json(e),
+        from_json::response::Error::Json(e) => Error::<S, T, U>::Json(e),
     };
     match builder.body(body) {
-        Ok(request) => match to_json_request(request) {
+        Ok(request) => match to_json::request(request) {
             Ok(request) => ServiceBuilder::new()
-                .layer(from_json_response::Layer::default())
+                .layer(from_json::response::Layer::default())
                 .layer(check_status::Layer::default())
                 .service(service)
                 .oneshot(request)
@@ -57,13 +57,13 @@ where
 }
 type Send<S, T, U, W> = Either<
     MapErr<
-        Oneshot<from_json_response::Service<check_status::Service<S>, W>, Request<T>>,
+        Oneshot<from_json::response::Service<check_status::Service<S>, W>, Request<T>>,
         MapErrFn<S, T, U>,
     >,
     Ready<Result<Response<W>, Error<S, T, U>>>,
 >;
 type MapErrFn<S, T, U> = fn(
-    from_json_response::Error<
+    from_json::response::Error<
         check_status::Error<<S as Service<Request<T>>>::Error, <U as Body>::Error>,
         <U as Body>::Error,
     >,
